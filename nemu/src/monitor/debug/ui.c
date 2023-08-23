@@ -132,10 +132,10 @@ static int cmd_x(char *args) {
 	sscanf(arg2, "%x", &sw_addr);
 	for(i = 0; i < step; i ++) {
 		if(j%4 == 0) {
-			printf("0x%x:", address);
+			printf("0x%x:", sw_addr);
 		}
-		printf("0x%08x ", swaddr_read(address, 4));
-		address += 4;
+		printf("0x%08x ", swaddr_read(sw_addr, 4));
+		sw_addr += 4;
 		j++;
 		if(j%4 == 0) {
 			printf("\n");
