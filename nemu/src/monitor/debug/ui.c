@@ -54,7 +54,7 @@ static struct {
 	{ "q", "Exit NEMU", cmd_q },
 	{ "si", "One step", cmd_si},
 	{ "info", "Display register status or monitoring point information", cmd_info},
-	{ "x", "Display memory", cmd_x}
+	{ "x", "Display memory content", cmd_x},
 
 	/* TODO: Add more commands */
 
@@ -86,16 +86,47 @@ static int cmd_help(char *args) {
 }
 
 static int cmd_si(char *args) {
+	char *arg = strtok(NULL, " ");
+	int step = 0, i;
+	if(arg == NULL) {
+		cpu_exec(1);
+		return 0;
+	}
+	sscanf(arg, "%d", &step);
+	if(step <= 0) {
+		printf("Invalid step number\n");
+		return 0;
+	}
+	for(i = 0; i < step; i ++) {
+		cpu_exec(1);
+	}
 	return 0;
 }
 
 static int cmd_info(char *args) {
+	char *arg = strtok(NULL, " ");
+	printf("%s\n", arg);
+	if(strcmp(arg, "r") == 0) {
+		printf("eax is %x\n", cpu.eax);
+		printf("ebx is %x\n", cpu.ebx);
+		printf("ecx is %x\n", cpu.ecx);
+		printf("edx is %x\n", cpu.edx);
+		printf("esi is %x\n", cpu.esi);
+		printf("edi is %x\n", cpu.edi);
+		printf("ebp is %x\n", cpu.ebp);
+		printf("esp is %x\n", cpu.esp);
+		printf("-------------------------\n");
+	}
+	else {
+		printf("Invalid Input\n");
+	}
 	return 0;
 }
 
 static int cmd_x(char *args) {
-	return 0;
+	return 1;
 }
+
 
 void ui_mainloop() {
 	while(1) {
