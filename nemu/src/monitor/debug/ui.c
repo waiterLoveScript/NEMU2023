@@ -42,6 +42,8 @@ static int cmd_si(char *args);
 
 static int cmd_info(char *args);
 
+static int cmd_x(char *args);
+
 static struct {
 	char *name;
 	char *description;
@@ -80,6 +82,18 @@ static int cmd_help(char *args) {
 		printf("Unknown command '%s'\n", arg);
 	}
 	return 0;
+}
+
+static int cmd_si(char *args) {
+
+}
+
+static int cmd_info(char *args) {
+
+}
+
+static int cmd_x(char *args) {
+
 }
 
 void ui_mainloop() {
