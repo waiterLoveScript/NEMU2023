@@ -104,7 +104,7 @@ static int cmd_si(char *args) {
 }
 
 static int cmd_info(char *args) {
-	char *arg = strtok(NULL, " ");
+	/*char *arg = strtok(NULL, " ");
 	printf("%s\n", arg);
 	if(strcmp(arg, "r") == 0) {
 		printf("eax is %x\n", cpu.eax);
@@ -119,7 +119,7 @@ static int cmd_info(char *args) {
 	}
 	else {
 		printf("Invalid Input\n");
-	}
+	}*/
 	return 0;
 }
 
