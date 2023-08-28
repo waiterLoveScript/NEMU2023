@@ -171,99 +171,118 @@ int dominant_operator (int l,int r)
 	return oper;
 }
 
-uint32_t eval(int l,int r) {
-	if (l > r){Assert (l>r,"something happened!\n");return 0;}
-	if (l == r) {
-	uint32_t num = 0;
-	if (tokens[l].type == NUMBER)
-		sscanf(tokens[l].str,"%d",&num);
-	if (tokens[l].type == HNUMBER)
-		sscanf(tokens[l].str,"%x",&num);
-	if (tokens[l].type == REGISTER)
-		{
-			if (strlen (tokens[l].str) == 3) {
-			int i;
-			for (i = R_EAX; i <= R_EDI; i ++)
-				if (strcmp (tokens[l].str,regsl[i]) == 0)break;
-				if (i > R_EDI)
-				if (strcmp (tokens[l].str,"eip") == 0)
-					num = cpu.eip;
-				else Assert (1,"no this register!\n");
-			else num = reg_l(i);
- 			}
- 			else if (strlen (tokens[l].str) == 2) {
- 			if (tokens[l].str[1] == 'x' || tokens[l].str[1] == 'p' || tokens[l].str[1] == 'i') {
-				int i;
-				for (i = R_AX; i <= R_DI; i ++)
-					if (strcmp (tokens[l].str,regsw[i]) == 0)break;
-				num = reg_w(i);
-			}
- 			else if (tokens[l].str[1] == 'l' || tokens[l].str[1] == 'h') {
-				int i;
-				for (i = R_AL; i <= R_BH; i ++)
-					if (strcmp (tokens[l].str,regsb[i]) == 0)break;
-				num = reg_b(i);
-			}
-			else assert (1);
-			}
+int eval(int p, int q){
+	int result = 0;
+	int op;
+	int val1, val2;
+	if (p > q){
+		assert(0);
+	} else if (p == q){
+		if (tokens[p].type == NUMBER){
+			sscanf(tokens[p].str, "%d", &result);
+			return result;
+		} else if (tokens[p].type == HNUMBER){
+			int i = 2;
+			while(tokens[p].str[i] != 0){
+				result *= 16;
+				result += tokens[p].str[i] < 58 ? tokens[p].str[i] - '0' : tokens[p].str[i] - 'a' + 10;
+				i++;
 		}
-	if (tokens[l].type == MARK)
-	{
-		int i;
-		for (i=0;i<nr_symtab_entry;i++)
-		{
-			if ((symtab[i].st_info&0xf) == STT_OBJECT)
-			{
-				char tmp [32];
-				int tmplen = symtab[i+1].st_name - symtab[i].st_name - 1;
-				strncpy (tmp,strtab+symtab[i].st_name,tmplen);
-				tmp [tmplen] = '\0';
-				if (strcmp (tmp,tokens[l].str) == 0)
-				{
-					num = symtab[i].st_value;
+		} else if (tokens[p].type == REGISTER){
+			if (!strcmp(tokens[p].str, "$eax")){
+					return cpu.eax;
+				} else if (!strcmp(tokens[p].str, "$ecx")){
+					return cpu.ecx;
+				} else if (!strcmp(tokens[p].str, "$edx")){
+					return cpu.edx;
+				} else if (!strcmp(tokens[p].str, "$ebx")){
+					return cpu.ebx;
+				} else if (!strcmp(tokens[p].str, "$esp")){
+					return cpu.esp;
+				} else if (!strcmp(tokens[p].str, "$ebp")){
+					return cpu.ebp;
+				} else if (!strcmp(tokens[p].str, "$esi")){
+					return cpu.esi;
+				} else if (!strcmp(tokens[p].str, "$edi")){
+					return cpu.edi;
+				} else if (!strcmp(tokens[p].str, "$eip")){
+					return cpu.eip;
+				} else {
+					return 0;
+				}
+		} else {
+			assert(0);
+			}
+	 } else if (check_parentheses(p, q) == true){
+	 	return eval(p + 1, q - 1);
+	 } else {
+		op = dominant_operator(p, q);
+	 	if (op == -2){
+			assert(0);
+		} else if (tokens[p].type == '!'){
+				sscanf(tokens[q].str, "%d", &result);
+				return !result;
+			} else if (tokens[p].type == REGISTER) {
+				if (!strcmp(tokens[p].str, "$eax")){
+					result = cpu.eax;
+					return result;
+				} else if (!strcmp(tokens[p].str, "$ecx")){
+					result = cpu.ecx;
+					return result;
+				} else if (!strcmp(tokens[p].str, "$edx")){
+					result = cpu.edx;
+					return result;
+				} else if (!strcmp(tokens[p].str, "$ebx")){
+					result = cpu.ebx;
+					return result;
+				} else if (!strcmp(tokens[p].str, "$esp")){
+					result = cpu.esp;
+					return result;
+				} else if (!strcmp(tokens[p].str, "$ebp")){
+					result = cpu.ebp;
+					return result;
+				} else if (!strcmp(tokens[p].str, "$esi")){
+					result = cpu.esi;
+					return result;
+				} else if (!strcmp(tokens[p].str, "$edi")){
+					result = cpu.edi;
+					return result;
+				} else if (!strcmp(tokens[p].str, "$eip")){
+					result = cpu.eip;
+					return result;
+				} else {
+					assert(0);
+					return 0;
 				}
 			}
 		}
-	}
-		return num;
-	}
-	else if (check_parentheses (l,r) == true)return eval (l + 1,r - 1);
- 	else {
-		int op = dominant_operator (l,r);
-//		printf ("op = %d\n",op);
- 		if (l == op || tokens [op].type == POINTOR || tokens [op].type == MINUS || tokens [op].type == '!')
-		{
-			uint32_t val = eval (l + 1,r);
-//			printf ("val = %d\n",val);
-			switch (tokens[l].type)
- 			{
-				case POINTOR:/*current_sreg = R_DS;*/return swaddr_read (val,4);
-				case MINUS:return -val;
-				case '!':return !val;
-				default :Assert (1,"default\n");
-			} 
-		}
+		val1 = eval(p, op - 1);
+		val2 = eval(op + 1, q);
 
-		uint32_t val1 = eval (l,op - 1);
-		uint32_t val2 = eval (op + 1,r);
-//		printf ("1 = %d,2 = %d\n",val1,val2);
-		switch (tokens[op].type)
-		{
-			case '+':return val1 + val2;
-			case '-':return val1 - val2;
-			case '*':return val1 * val2;
-			case '/':return val1 / val2;
-			case EQ:return val1 == val2;
-			case NEQ:return val1 != val2;
-			case AND:return val1 && val2;
-			case OR:return val1 || val2;
-			default:
-			break;
-  		}
-  	}
-	assert (1);
-	return -123456;
+		switch (tokens[op].type){
+			case '+' : return val1 + val2;	
+			case '-' : return val1 - val2;
+			case '*' : return val1 * val2;
+			case '/' : return val1 / val2;
+			case OR : return val1 || val2;
+			case AND : return val1 && val2;
+			case EQ : 
+				   if (val1 == val2){
+					return 1;
+				   } else {
+					return 0;
+				   }
+			case NEQ :
+				   if (val1 != val2){
+					return 1;
+				    } else {
+					return 0;
+				    }
+			default : assert(0);
+		}
+	return 0;
 }
+
 
 uint32_t expr(char *e, bool *success) {
 	if(!make_token(e)) {
