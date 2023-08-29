@@ -152,14 +152,15 @@ static int cmd_x(char *args) {
 			printf("\n");
 		}
 	}
+	printf("------------------------\n");
 	return 0;
 }
 
 static int cmd_p(char *args) {
-	//if(args == NULL) return 0;
-	char *arg = strtok(NULL, " ");
+	if(args == NULL) return 0;
+	//char *arg = strtok(NULL, " ");
 	bool success = true;
-	uint32_t EXPR = expr(arg, &success);
+	uint32_t EXPR = expr(args, &success);
 	if(!success) {
 		printf("Expression Error!\n");
 		return 0;
