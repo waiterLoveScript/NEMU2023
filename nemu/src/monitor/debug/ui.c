@@ -48,6 +48,10 @@ static int cmd_x(char *args);
 
 static int cmd_p(char *args);
 
+static int cmd_w(char *args);
+
+static int cmd_d(char *args);
+
 static struct {
 	char *name;
 	char *description;
@@ -59,7 +63,9 @@ static struct {
 	{ "si", "One step", cmd_si},
 	{ "info", "Display register status or monitoring point information", cmd_info},
 	{ "x", "Display memory content", cmd_x},
-	{ "p", "Expression evaluation", cmd_p}
+	{ "p", "Expression evaluation", cmd_p},
+	{ "w", "Add a WatchPoint", cmd_w},
+	{ "d", "Delete a WatchPoint", cmd_d}
 
 	/* TODO: Add more commands */
 
@@ -150,10 +156,10 @@ static int cmd_x(char *args) {
 }
 
 static int cmd_p(char *args) {
-	if(args == NULL) return 0;
-	//char *arg = strtok(NULL, " ");
+	//if(args == NULL) return 0;
+	char *arg = strtok(NULL, " ");
 	bool success = true;
-	uint32_t EXPR = expr(args, &success);
+	uint32_t EXPR = expr(arg, &success);
 	if(!success) {
 		printf("Expression Error!\n");
 		return 0;
@@ -162,6 +168,13 @@ static int cmd_p(char *args) {
 	return 0;
 }
 
+static int cmd_w(char *args) {
+	return 0;
+}
+
+static int cmd_d(char *args) {
+	return 0;
+}
 
 void ui_mainloop() {
 	while(1) {
