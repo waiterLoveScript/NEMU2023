@@ -8,7 +8,14 @@
 #include "elf.c"
 
 enum {
-	NOTYPE = 256, EQ, NEQ, AND, OR, MINUS, POINTER, NUMBER, HNUMBER, REGISTER, MARK, NOT, PLUS, DIV, NEG, LB, RB, TIMES
+	NOTYPE = 0, 
+	PLUS, MINUS, TIMES, DIV,
+	EQ, NOTEQ,
+	AND, OR, NOT,
+	NEG, POINTER,
+	LB, RB,
+	HEX, DEC,
+	REG, MARK
 
 	/* TODO: Add more tokens types */
 
@@ -24,23 +31,21 @@ static struct rule {
 	 * Pay attention to the precedence level of different rules.
 	 */
 
-	{" +",	NOTYPE, 0},							// spaces
-	{"\\b[0-9]+\\b",NUMBER, 0},					// number
-	{"\\b0[xX][0-9a-fA-F]+\\b",HNUMBER, 0},		// 16 number
-	{"\\$[a-zA-Z]+",REGISTER, 0},				// register
-	{"\\b[a-zA-Z_0-9]+" , MARK, 0},				// mark
-	{"!=", NEQ, 3},								// not equal	
-	{"!", NOT, 6},								// not
-	{"\\*", TIMES, 5},							// mul
-	{"/", DIV, 5},								// div
-	{"	+", NOTYPE, 0},							// tabs
-	{"\\+", PLUS, 4},							// plus
-	{"==", EQ, 3},								// equal
-	{"-", '-', 4},								// sub
-	{"&&", AND, 2},								// and
-	{"\\|\\|", OR, 1},							// or
-	{"\\(", LB, 7},                       		// left bracket   
-	{"\\)", RB, 7},                        		// right bracket
+	{" +",	NOTYPE, 0},
+	{"\\+", PLUS, 4},
+	{"-", MINUS, 4},
+	{"\\*", TIMES, 5},
+	{"/", DIV, 5},
+	{"==", EQ, 3},
+	{"!=", NOTEQ, 3},
+	{"&&", AND, 1},
+	{"\\|\\|", OR, 2},
+	{"!", NOT, 6},
+	{"\\(", LB, 7},
+	{"\\)", RB, 7},
+	{"0[xX][0-9a-zA-Z]+", HEX, 0},
+	{"[0-9]+", DEC, 0},
+	{"\\$[a-zA-Z]+", REG, 0}
 
 };
 
@@ -100,25 +105,30 @@ static bool make_token(char *e) {
 				 */
 
 				switch(rules[i].token_type) {
-					case NOTYPE: break;
-
-					case REGISTER:
-						tokens[nr_token].type = rules[i].token_type;
-						tokens[nr_token].priority = rules[i].priority; 
-						strncpy (tokens[nr_token].str,tmp,substr_len-1);
-						tokens[nr_token].str[substr_len-1]='\0';
-						nr_token ++;
+					case NOTYPE : break;
+					case HEX : case DEC : case REG :
+						strncpy(tokens[nr_token+1].str, e + position - substr_len, substr_len);
+						tokens[nr_token+1].str[substr_len] = '\0';
+					default :
+						tokens[++nr_token].priority = rules[i].priority;
+						if(rules[i].token_type == MINUS) {	//negative
+							if(nr_token == 1) tokens[nr_token].type = NEG;
+							else if(PLUS <= tokens[nr_token-1].type && tokens[nr_token-1].type <= LB) {
+								tokens[nr_token].type = NEG;
+								tokens[nr_token].priority = 6;
+							} else tokens[nr_token].type = MINUS;
+						} else if(rules[i].token_type == TIMES) { //pointer
+							if(nr_token == 1) tokens[nr_token].type = POINTER;
+							else if(PLUS <= tokens[nr_token-1].type && tokens[nr_token-1].type <= LB) {
+								tokens[nr_token].type = POINTER;
+								tokens[nr_token].priority = 6;
+							} else tokens[nr_token].type = TIMES;
+						} else {
+							tokens[nr_token].type = rules[i].token_type;
+						}
+						//Log("priority: %d || match tokens[%d] = \"%s\" at position %d", tokens[nr_token].priority, nr_token, tokens[nr_token].str, position);
 						break;
-
-					default:
-						tokens[nr_token].type = rules[i].token_type;
-						tokens[nr_token].priority = rules[i].priority;
-						strncpy (tokens[nr_token].str,substr_start,substr_len);
-						tokens[nr_token].str[substr_len]='\0';
-						nr_token ++;
-						panic("please implement me");
 				}
-				position += substr_len;
 				break;
 			}
 		}
@@ -132,22 +142,23 @@ static bool make_token(char *e) {
 	return true; 
 }
 
-bool check_parentheses (int l,int r)
-{
-	int i;
-	if (tokens[l].type == '(' && tokens[r].type ==')')
-	{
-		int lc = 0, rc = 0;
-		for (i = l + 1; i < r; i ++)
-		{
-			if (tokens[i].type == '(')lc ++;
-			if (tokens[i].type == ')')rc ++;
-			if (rc > lc)return false;	
+bool check_parentheses(int l, int r, bool *success) {
+	*success = true;
+	if(l > r) return *success = false;
+	if(tokens[l].type == LB && tokens[r].type == RB) {
+		int cnt = 0, flag = 1, i;
+		for(i = l; i <= r; i++) {
+			if(tokens[i].type == LB) cnt++;
+			if(tokens[i].type == RB) cnt--;
+			if(cnt < 0) return *success = false;
+			if(i != r && cnt == 0) flag = 0;
 		}
-		if (lc == rc)return true;
+		if(cnt != 0) return *success = false;
+		return flag;
 	}
 	return false;
 }
+
 int dominant_operator (int l,int r)
 {
 	int i,j;
@@ -155,7 +166,7 @@ int dominant_operator (int l,int r)
 	int oper = l;
 	for (i = l; i <= r;i ++)
 	{
-		if (tokens[i].type == NUMBER || tokens[i].type == HNUMBER || tokens[i].type == REGISTER || tokens[i].type == MARK)
+		if (tokens[i].type == DEC || tokens[i].type == HEX || tokens[i].type == REG || tokens[i].type == MARK)
 			continue;
 		int cnt = 0;
 		bool key = true;
@@ -176,13 +187,13 @@ uint32_t eval(int l, int r, bool *success) {
 	if(l > r) return *success = false;
 	if(l == r) {
 		uint32_t tmp;
-		if(tokens[l].type == HNUMBER) {
+		if(tokens[l].type == HEX) {
 			sscanf(tokens[l].str, "%x", &tmp);
 			return tmp;
-		}else if(tokens[l].type == NUMBER) {
+		}else if(tokens[l].type == DEC) {
 			sscanf(tokens[l].str, "%d", &tmp);
 			return tmp;
-		}else if(tokens[l].type == REGISTER) {
+		}else if(tokens[l].type == REG) {
 			const char *RE[] = {"$eax", "$ecx", "$edx", "$ebx", "$esp", "$ebp", "$esi", "$edi"};
 			const char *REB[] = {"$EAX", "$ECX", "$EDX", "$EBX", "$ESP", "$EBP", "$ESI", "$EDI"};
 			int i;
@@ -194,7 +205,7 @@ uint32_t eval(int l, int r, bool *success) {
 		}
 	}
 
-	bool flag = check_parentheses(l, r);
+	bool flag = check_parentheses(l, r, success);
 	if(!*success) 	return 0;
 	if(flag)
 		return eval(l + 1, r - 1, success);
@@ -241,7 +252,7 @@ uint32_t eval(int l, int r, bool *success) {
 		case EQ:
 			return a == b;
 			break;
-		case NEQ:
+		case NOTEQ:
 			return a != b;
 			break;
 		case AND:
@@ -261,21 +272,10 @@ uint32_t expr(char *e, bool *success) {
 		*success = false;
 		return 0;
 	}
-	int i;
-	for (i = 0;i < nr_token; i ++) {
- 		if (tokens[i].type == '*' && (i == 0 || (tokens[i - 1].type != NUMBER && tokens[i - 1].type != HNUMBER && tokens[i - 1].type != REGISTER && tokens[i - 1].type != MARK && tokens[i - 1].type !=')'))) {
-			tokens[i].type = POINTER;
-			tokens[i].priority = 6;
-		}
-		if (tokens[i].type == '-' && (i == 0 || (tokens[i - 1].type != NUMBER && tokens[i - 1].type != HNUMBER && tokens[i - 1].type != REGISTER && tokens[i - 1].type != MARK && tokens[i - 1].type !=')'))) {
-			tokens[i].type = MINUS;
-			tokens[i].priority = 6;
- 		}
-  	}
 
 	/* TODO: Insert codes to evaluate the expression. */
 	panic("please implement me");
 	*success = true;
-	return 0;
+	return eval(1, nr_token, success);
 }
 
