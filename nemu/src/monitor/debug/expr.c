@@ -8,7 +8,7 @@
 #include "elf.c"
 
 enum {
-	NOTYPE = 256, EQ, NEQ, AND, OR, MINUS, POINTOR, NUMBER, HNUMBER, REGISTER, MARK, NOT
+	NOTYPE = 256, EQ, NEQ, AND, OR, MINUS, POINTER, NUMBER, HNUMBER, REGISTER, MARK, NOT, PLUS, DIV, NEG, LB, RB, TIMES
 
 	/* TODO: Add more tokens types */
 
@@ -31,16 +31,16 @@ static struct rule {
 	{"\\b[a-zA-Z_0-9]+" , MARK, 0},				// mark
 	{"!=", NEQ, 3},								// not equal	
 	{"!", NOT, 6},								// not
-	{"\\*", '*', 5},							// mul
-	{"/", '/', 5},								// div
+	{"\\*", TIMES, 5},							// mul
+	{"/", DIV, 5},								// div
 	{"	+", NOTYPE, 0},							// tabs
-	{"\\+", '+', 4},							// plus
+	{"\\+", PLUS, 4},							// plus
 	{"==", EQ, 3},								// equal
 	{"-", '-', 4},								// sub
 	{"&&", AND, 2},								// and
 	{"\\|\\|", OR, 1},							// or
-	{"\\(", '(', 7},                       		// left bracket   
-	{"\\)", ')', 7},                        	// right bracket
+	{"\\(", LB, 7},                       		// left bracket   
+	{"\\)", RB, 7},                        		// right bracket
 
 };
 
@@ -171,115 +171,87 @@ int dominant_operator (int l,int r)
 	return oper;
 }
 
-int eval(int p, int q){
-	int result = 0;
-	int op;
-	int val1, val2;
-	if (p > q){
-		assert(0);
-	} else if (p == q){
-		if (tokens[p].type == NUMBER){
-			sscanf(tokens[p].str, "%d", &result);
-			return result;
-		} else if (tokens[p].type == HNUMBER){
-			int i = 2;
-			while(tokens[p].str[i] != 0){
-				result *= 16;
-				result += tokens[p].str[i] < 58 ? tokens[p].str[i] - '0' : tokens[p].str[i] - 'a' + 10;
-				i++;
-		}
-		} else if (tokens[p].type == REGISTER){
-			if (!strcmp(tokens[p].str, "$eax")){
-					return cpu.eax;
-				} else if (!strcmp(tokens[p].str, "$ecx")){
-					return cpu.ecx;
-				} else if (!strcmp(tokens[p].str, "$edx")){
-					return cpu.edx;
-				} else if (!strcmp(tokens[p].str, "$ebx")){
-					return cpu.ebx;
-				} else if (!strcmp(tokens[p].str, "$esp")){
-					return cpu.esp;
-				} else if (!strcmp(tokens[p].str, "$ebp")){
-					return cpu.ebp;
-				} else if (!strcmp(tokens[p].str, "$esi")){
-					return cpu.esi;
-				} else if (!strcmp(tokens[p].str, "$edi")){
-					return cpu.edi;
-				} else if (!strcmp(tokens[p].str, "$eip")){
-					return cpu.eip;
-				} else {
-					return 0;
-				}
-		} else {
-			assert(0);
-			}
-	 } else if (check_parentheses(p, q) == true){
-	 	return eval(p + 1, q - 1);
-	 } else {
-		op = dominant_operator(p, q);
-	 	if (op == -2){
-			assert(0);
-		} else if (tokens[p].type == '!'){
-				sscanf(tokens[q].str, "%d", &result);
-				return !result;
-			} else if (tokens[p].type == REGISTER) {
-				if (!strcmp(tokens[p].str, "$eax")){
-					result = cpu.eax;
-					return result;
-				} else if (!strcmp(tokens[p].str, "$ecx")){
-					result = cpu.ecx;
-					return result;
-				} else if (!strcmp(tokens[p].str, "$edx")){
-					result = cpu.edx;
-					return result;
-				} else if (!strcmp(tokens[p].str, "$ebx")){
-					result = cpu.ebx;
-					return result;
-				} else if (!strcmp(tokens[p].str, "$esp")){
-					result = cpu.esp;
-					return result;
-				} else if (!strcmp(tokens[p].str, "$ebp")){
-					result = cpu.ebp;
-					return result;
-				} else if (!strcmp(tokens[p].str, "$esi")){
-					result = cpu.esi;
-					return result;
-				} else if (!strcmp(tokens[p].str, "$edi")){
-					result = cpu.edi;
-					return result;
-				} else if (!strcmp(tokens[p].str, "$eip")){
-					result = cpu.eip;
-					return result;
-				} else {
-					assert(0);
-					return 0;
-				}
-			}
-		}
-		val1 = eval(p, op - 1);
-		val2 = eval(op + 1, q);
+uint32_t eval(int l, int r, bool *success) {
 
-		switch (tokens[op].type){
-			case '+' : return val1 + val2;	
-			case '-' : return val1 - val2;
-			case '*' : return val1 * val2;
-			case '/' : return val1 / val2;
-			case OR : return val1 || val2;
-			case AND : return val1 && val2;
-			case EQ : 
-				   if (val1 == val2){
-					return 1;
-				   } else {
-					return 0;
-				   }
-			case NEQ :
-				   if (val1 != val2){
-					return 1;
-				    } else {
-					return 0;
-				    }
-			default : assert(0);
+	if(l > r) return *success = false;
+	if(l == r) {
+		uint32_t tmp;
+		if(tokens[l].type == HNUMBER) {
+			sscanf(tokens[l].str, "%x", &tmp);
+			return tmp;
+		}else if(tokens[l].type == NUMBER) {
+			sscanf(tokens[l].str, "%d", &tmp);
+			return tmp;
+		}else if(tokens[l].type == REGISTER) {
+			const char *RE[] = {"$eax", "$ecx", "$edx", "$ebx", "$esp", "$ebp", "$esi", "$edi"};
+			const char *REB[] = {"$EAX", "$ECX", "$EDX", "$EBX", "$ESP", "$EBP", "$ESI", "$EDI"};
+			int i;
+			if(strcmp(tokens[l].str, "$eip") == 0 || strcmp(tokens[l].str, "$EIP") == 0) return cpu.eip;
+			for(i = 0; i < 8; i++)
+				if(strcmp(tokens[l].str, RE[i]) == 0 || strcmp(tokens[l].str, REB[i]) == 0)
+					return cpu.gpr[i]._32;
+			return *success = false;
 		}
+	}
+
+	bool flag = check_parentheses(l, r);
+	if(!*success) 	return 0;
+	if(flag)
+		return eval(l + 1, r - 1, success);
+	int nxtPro = 10, i, cnt = 0, nxt = l;
+	for(i = l; i <= r; i++) {
+		if(tokens[i].type == LB) cnt++;
+		if(tokens[i].type == RB) cnt--;
+		if(cnt == 0) {
+			if(tokens[i].type >= PLUS && tokens[i].type < LB && tokens[i].priority <= nxtPro)
+				nxt = i, nxtPro = tokens[i].priority;
+		}
+	}
+	//Log("%d %d", nxt, tokens[nxt].priority);
+	assert(cnt == 0);
+	if (l == nxt || tokens[nxt].type == POINTER || tokens[nxt].type == NEG || tokens[nxt].type == NOT) {
+		uint32_t val = eval(l + 1, r, success);
+		switch (tokens[l].type) {
+			case POINTER:
+				return swaddr_read(val, 4);
+			case NEG:
+				return -val;
+			case NOT:
+				return !val;
+			default :
+				break;
+		}
+		panic("error 1");
+	}
+	uint32_t a = eval(l, nxt - 1, success);
+	uint32_t b = eval(nxt + 1, r, success);
+	switch (tokens[nxt].type) {
+		case PLUS:
+			return a + b;
+			break;
+		case MINUS:
+			return a - b;
+			break;
+		case TIMES:
+			return a * b;
+			break;
+		case DIV:
+			return a / b;
+			break;
+		case EQ:
+			return a == b;
+			break;
+		case NEQ:
+			return a != b;
+			break;
+		case AND:
+			return a && b;
+			break;
+		case OR:
+			return a || b;
+			break;
+	}
+	panic("error 2");
 	return 0;
 }
 
@@ -292,7 +264,7 @@ uint32_t expr(char *e, bool *success) {
 	int i;
 	for (i = 0;i < nr_token; i ++) {
  		if (tokens[i].type == '*' && (i == 0 || (tokens[i - 1].type != NUMBER && tokens[i - 1].type != HNUMBER && tokens[i - 1].type != REGISTER && tokens[i - 1].type != MARK && tokens[i - 1].type !=')'))) {
-			tokens[i].type = POINTOR;
+			tokens[i].type = POINTER;
 			tokens[i].priority = 6;
 		}
 		if (tokens[i].type == '-' && (i == 0 || (tokens[i - 1].type != NUMBER && tokens[i - 1].type != HNUMBER && tokens[i - 1].type != REGISTER && tokens[i - 1].type != MARK && tokens[i - 1].type !=')'))) {
