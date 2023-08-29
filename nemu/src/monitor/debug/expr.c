@@ -5,7 +5,6 @@
  */
 #include <sys/types.h>
 #include <regex.h>
-#include "elf.c"
 
 enum {
 	NOTYPE = 0, 
@@ -91,8 +90,6 @@ static bool make_token(char *e) {
 		for(i = 0; i < NR_REGEX; i ++) {
 			if(regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
 				char *substr_start = e + position;
-
-				char *tmp = e + position + 1;
 
 				int substr_len = pmatch.rm_eo;
 
