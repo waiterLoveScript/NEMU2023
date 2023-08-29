@@ -150,9 +150,10 @@ static int cmd_x(char *args) {
 }
 
 static int cmd_p(char *args) {
-	if(args == NULL) return 0;
+	//if(args == NULL) return 0;
+	char *arg = strtok(NULL, " ");
 	bool success = true;
-	uint32_t EXPR = expr(args, &success);
+	uint32_t EXPR = expr(arg, &success);
 	if(!success) {
 		printf("Expression Error!\n");
 		return 0;
