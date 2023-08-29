@@ -135,7 +135,7 @@ static int cmd_info(char *args) {
 }
 
 static int cmd_x(char *args) {
-	char *arg1 = strtok(NULL, " ");
+	/*char *arg1 = strtok(NULL, " ");
 	char *arg2 = strtok(NULL, " ");
 	int step, i, j = 0;
 	swaddr_t sw_addr;
@@ -153,6 +153,23 @@ static int cmd_x(char *args) {
 		}
 	}
 	printf("------------------------\n");
+	return 0;*/
+	int n;
+	swaddr_t start_address;
+	int i;
+	bool suc;
+	char *cmd = strtok(args, " ");
+	sscanf (cmd,"%d",&n);
+	args = cmd + strlen(cmd) + 1;
+	start_address = expr (args,&suc);
+	if (!suc)assert (1);
+	printf ("0x%08x: ",start_address);
+	for (i=1;i<=n;i++)
+	{
+		printf ("0x%08x ",swaddr_read (start_address,4));
+		start_address+=4;
+	}
+	printf ("\n");
 	return 0;
 }
 
