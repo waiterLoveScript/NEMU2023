@@ -170,10 +170,31 @@ static int cmd_p(char *args) {
 }
 
 static int cmd_w(char *args) {
+	if(args == NULL) return 0;
+	WP *wp;
+	bool success = true;
+	uint32_t value;
+	value = expr(args, &success);
+	if(!success) {
+		printf("Expression Error!\n");
+		return 0;
+	}
+	wp = new_wp();
+	strcpy(wp->expr, args);
+	wp->val = value;
+	printf("WatchPoint %d : %s is set.\n", wp->NO, wp->expr);
+	printf("Value : 0x%x\n", wp->val);
 	return 0;
 }
 
 static int cmd_d(char *args) {
+	int num;
+	if (args==NULL) {
+		printf("Need more arguments, please inset an integer to appoint the WatchPoint.\n");
+	} else {
+		num = atoi(args);
+		delete_wp(num);
+	}
 	return 0;
 }
 
