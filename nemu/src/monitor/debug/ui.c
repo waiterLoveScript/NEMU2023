@@ -186,7 +186,7 @@ static int cmd_p(char *args) {
 	return 0;
 }
 
-static int cmd_w(char *args) {
+/*static int cmd_w(char *args) {
 	if(args == NULL) return 0;
 	WP *wp;
 	bool success = true;
@@ -212,6 +212,25 @@ static int cmd_d(char *args) {
 		num = atoi(args);
 		delete_wp(num);
 	}
+	return 0;
+}*/
+
+static int cmd_w(char *args) {
+	if(args) {
+		int NO = set_watchpoint(args);
+		if(NO != -1) { printf("Set watchpoint #%d\n", NO); }
+		else { printf("Bad expression\n"); }
+	}
+	return 0;
+}
+
+static int cmd_d(char *args) {
+	int NO;
+	sscanf(args, "%d", &NO);
+	if(!delete_watchpoint(NO)) {
+		printf("Watchpoint #%d does not exist\n", NO);
+	}
+
 	return 0;
 }
 
