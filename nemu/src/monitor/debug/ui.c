@@ -8,6 +8,7 @@
 #include <readline/history.h>
 
 void cpu_exec(uint32_t);
+void display_reg();
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 char* rl_gets() {
@@ -27,7 +28,97 @@ char* rl_gets() {
 	return line_read;
 }
 
-static int cmd_info(char *args);
+/* TODO: Add single step */
+static int cmd_si(char *args) {
+	char *arg = strtok(NULL, " ");
+	int i = 1;
+
+	if(arg != NULL) {
+		sscanf(arg, "%d", &i);
+	}
+	cpu_exec(i);
+	return 0;
+}
+
+/* TODO: Add info command */
+static int cmd_info(char *args) {
+	char *arg = strtok(NULL, " ");
+
+	if(arg != NULL) {
+		if(strcmp(arg, "r") == 0) {
+			display_reg();
+		}
+		else if(strcmp(arg, "w") == 0) {
+			list_watchpoint();
+		}
+	}
+	return 0;
+}
+
+/* Add examine memory */
+static int cmd_x(char *args) {
+	char *arg = strtok(NULL, " ");
+	int n;
+	swaddr_t addr;
+	int i;
+
+	if(arg != NULL) {
+		sscanf(arg, "%d", &n);
+
+		bool success;
+		addr = expr(arg + strlen(arg) + 1, &success);
+		if(success) { 
+			for(i = 0; i < n; i ++) {
+				if(i % 4 == 0) {
+					printf("0x%08x: ", addr);
+				}
+
+				printf("0x%08x ", swaddr_read(addr, 4));
+				addr += 4;
+				if(i % 4 == 3) {
+					printf("\n");
+				}
+			}
+			printf("\n");
+		}
+		else { printf("Bad expression\n"); }
+
+	}
+	return 0;
+}
+
+/* Add expression evaluation  */
+static int cmd_p(char *args) {
+	bool success;
+
+	if(args) {
+		uint32_t r = expr(args, &success);
+		if(success) { printf("0x%08x(%d)\n", r, r); }
+		else { printf("Bad expression\n"); }
+	}
+	return 0;
+}
+
+/* Add set watchpoint  */
+static int cmd_w(char *args) {
+	if(args) {
+		int NO = set_watchpoint(args);
+		if(NO != -1) { printf("Set watchpoint #%d\n", NO); }
+		else { printf("Bad expression\n"); }
+	}
+	return 0;
+}
+
+/* Add delete watchpoint */
+static int cmd_d(char *args) {
+	int NO;
+	sscanf(args, "%d", &NO);
+	if(!delete_watchpoint(NO)) {
+		printf("Watchpoint #%d does not exist\n", NO);
+	}
+
+	return 0;
+}
 
 static int cmd_c(char *args) {
 	cpu_exec(-1);
@@ -40,18 +131,6 @@ static int cmd_q(char *args) {
 
 static int cmd_help(char *args);
 
-static int cmd_si(char *args);
-
-static int cmd_info(char *args);
-
-static int cmd_x(char *args);
-
-static int cmd_p(char *args);
-
-static int cmd_w(char *args);
-
-static int cmd_d(char *args);
-
 static struct {
 	char *name;
 	char *description;
@@ -59,15 +138,15 @@ static struct {
 } cmd_table [] = {
 	{ "help", "Display informations about all supported commands", cmd_help },
 	{ "c", "Continue the execution of the program", cmd_c },
-	{ "q", "Exit NEMU", cmd_q },
-	{ "si", "One step", cmd_si},
-	{ "info", "Display register status or monitoring point information", cmd_info},
-	{ "x", "Display memory content", cmd_x},
-	{ "p", "Expression evaluation", cmd_p},
-	{ "w", "Add a WatchPoint", cmd_w},
-	{ "d", "Delete a WatchPoint", cmd_d}
+	{ "q", "Exit NEMU", cmd_q }, 
 
 	/* TODO: Add more commands */
+        { "si", "Single step", cmd_si },
+        { "info", "info r - print register values; info w - show watch point state", cmd_info },
+	{ "x", "Examine memory", cmd_x },
+        { "p", "Evaluate the value of expression", cmd_p },
+	{ "w", "Set watchpoint", cmd_w },
+	{ "d", "Delete watchpoint", cmd_d }
 
 };
 
@@ -93,144 +172,6 @@ static int cmd_help(char *args) {
 		}
 		printf("Unknown command '%s'\n", arg);
 	}
-	return 0;
-}
-
-static int cmd_si(char *args) {
-	char *arg = strtok(NULL, " ");
-	int step = 0, i;
-	if(arg == NULL) {
-		cpu_exec(1);
-		return 0;
-	}
-	sscanf(arg, "%d", &step);
-	if(step <= 0) {
-		printf("Invalid step number\n");
-		return 0;
-	}
-	for(i = 0; i < step; i ++) {
-		cpu_exec(1);
-	}
-	return 0;
-}
-
-static int cmd_info(char *args) {
-	char *arg = strtok(NULL, " ");
-	printf("%s\n", arg);
-	if(strcmp(arg, "r") == 0) {
-		printf("eax is %x\n", cpu.eax);
-		printf("ebx is %x\n", cpu.ebx);
-		printf("ecx is %x\n", cpu.ecx);
-		printf("edx is %x\n", cpu.edx);
-		printf("esi is %x\n", cpu.esi);
-		printf("edi is %x\n", cpu.edi);
-		printf("ebp is %x\n", cpu.ebp);
-		printf("esp is %x\n", cpu.esp);
-		printf("-------------------------\n");
-	}
-	else {
-		printf("Invalid Input\n");
-	}
-	return 0;
-}
-
-static int cmd_x(char *args) {
-	/*char *arg1 = strtok(NULL, " ");
-	char *arg2 = strtok(NULL, " ");
-	int step, i, j = 0;
-	swaddr_t sw_addr;
-	sscanf(arg1, "%d", &step);
-	sscanf(arg2, "%x", &sw_addr);
-	for(i = 0; i < step; i ++) {
-		if(j%4 == 0) {
-			printf("0x%x:", sw_addr);
-		}
-		printf("0x%08x ", swaddr_read(sw_addr, 4));
-		sw_addr += 4;
-		j++;
-		if(j%4 == 0) {
-			printf("\n");
-		}
-	}
-	printf("------------------------\n");
-	return 0;*/
-	int n;
-	swaddr_t start_address;
-	int i;
-	bool suc;
-	char *cmd = strtok(args, " ");
-	sscanf (cmd,"%d",&n);
-	args = cmd + strlen(cmd) + 1;
-	start_address = expr (args,&suc);
-	if (!suc)assert (1);
-	printf ("0x%08x: ",start_address);
-	for (i=1;i<=n;i++)
-	{
-		printf ("0x%08x ",swaddr_read (start_address,4));
-		start_address+=4;
-	}
-	printf ("\n");
-	return 0;
-}
-
-static int cmd_p(char *args) {
-	if(args == NULL) return 0;
-	//char *arg = strtok(NULL, " ");
-	bool success = true;
-	uint32_t EXPR = expr(args, &success);
-	if(!success) {
-		printf("Expression Error!\n");
-		return 0;
-	}
-	printf("0x%x\n", EXPR);
-	return 0;
-}
-
-/*static int cmd_w(char *args) {
-	if(args == NULL) return 0;
-	WP *wp;
-	bool success = true;
-	uint32_t value;
-	value = expr(args, &success);
-	if(!success) {
-		printf("Expression Error!\n");
-		return 0;
-	}
-	wp = new_wp();
-	strcpy(wp->expr, args);
-	wp->val = value;
-	printf("WatchPoint %d : %s is set.\n", wp->NO, wp->expr);
-	printf("Value : 0x%x\n", wp->val);
-	return 0;
-}
-
-static int cmd_d(char *args) {
-	int num;
-	if (args==NULL) {
-		printf("Need more arguments, please inset an integer to appoint the WatchPoint.\n");
-	} else {
-		num = atoi(args);
-		delete_wp(num);
-	}
-	return 0;
-}*/
-
-static int cmd_w(char *args) {
-	if(args) {
-		int NO = set_watchpoint(args);
-		if(NO != -1) { printf("Set watchpoint #%d\n", NO); }
-		else { printf("Bad expression\n"); }
-	}
-	return 0;
-}
-
-static int cmd_d(char *args) {
-	int NO;
-	sscanf(args, "%d", &NO);
-	if(!delete_watchpoint(NO)) {
-		printf("Watchpoint #%d does not exist\n", NO);
-	}
-
 	return 0;
 }
 
