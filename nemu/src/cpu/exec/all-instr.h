@@ -16,7 +16,7 @@
 #include "arith/sbb.h"
 #include "arith/sub.h"
 
-#include "control/jmp.h"
+#include "control/all.h"
 
 #include "logic/and.h"
 #include "logic/or.h"
