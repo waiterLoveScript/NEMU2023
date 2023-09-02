@@ -8,6 +8,7 @@
 #include "data-mov/push.h"
 
 #include "arith/adc.h"
+#include "arith/add.h"
 #include "arith/dec.h"
 #include "arith/inc.h"
 #include "arith/neg.h"
@@ -17,10 +18,12 @@
 #include "arith/div.h"
 #include "arith/sbb.h"
 #include "arith/sub.h"
-#include "arith/add.h"
 #include "arith/cmp.h"
 
-#include "control/all.h"
+#include "control/jmp.h"
+#include "control/call.h"
+#include "control/ret.h"
+#include "control/je.h"
 
 #include "logic/and.h"
 #include "logic/or.h"
