@@ -24,6 +24,8 @@
 #include "control/call.h"
 #include "control/ret.h"
 #include "control/je.h"
+#include "control/ja.h"
+#include "control/jbe.h"
 
 #include "logic/and.h"
 #include "logic/or.h"
