@@ -26,6 +26,13 @@
 #include "control/je.h"
 #include "control/ja.h"
 #include "control/jbe.h"
+#include "control/jg.h"
+#include "control/jge.h"
+#include "control/jl.h"
+#include "control/jle.h"
+#include "control/jne.h"
+#include "control/js.h"
+#include "control/jns.h"
 
 #include "logic/and.h"
 #include "logic/or.h"
