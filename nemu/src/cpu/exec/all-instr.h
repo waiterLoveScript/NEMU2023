@@ -8,6 +8,8 @@
 #include "data-mov/push.h"
 #include "data-mov/lods.h"
 #include "data-mov/leave.h"
+#include "data-mov/cmovne.h"
+#include "data-mov/cmovs.h"
 
 #include "arith/adc.h"
 #include "arith/add.h"
