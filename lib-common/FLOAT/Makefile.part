@@ -11,11 +11,11 @@ $(FLOAT): $(FLOAT_A_OBJ)
 # TODO: complete the following rules (Note: must use "/usr/bin/gcc-4.4" , "-fno-builtin" and "-fno-if-conversion" in compilation rules)
 
 $(FLOAT_O):
-	mkdir -p obj/lib-common/FLOAT
-	$(CC) -m32 -O2 -fno-builtin -c lib-common/FLOAT/FLOAT.c -o $(FLOAT_O) -Ilib-common
+	#mkdir -p obj/lib-common/FLOAT
+	#$(CC) -m32 -O2 -fno-builtin -c lib-common/FLOAT/FLOAT.c -o $(FLOAT_O) -Ilib-common
 
 
 $(FLOAT_VFPRINTF_O):
-	mkdir -p obj/lib-common/FLOAT
-	$(CC) -m32 -O2 -fno-builtin -fno-stack-protector -D_FORTIFY_SOURCE=0 -c lib-common/FLOAT/FLOAT_vfprintf.c -o $(FLOAT_VFPRINTF_O) -Ilib-common
+	#mkdir -p obj/lib-common/FLOAT
+	#$(CC) -m32 -O2 -fno-builtin -fno-stack-protector -D_FORTIFY_SOURCE=0 -c lib-common/FLOAT/FLOAT_vfprintf.c -o $(FLOAT_VFPRINTF_O) -Ilib-common
 
