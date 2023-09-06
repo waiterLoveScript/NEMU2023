@@ -16,20 +16,20 @@ static make_helper(_2byte_esc);
 		m.val = instr_fetch(eip + 1, 1); \
 		return concat(opcode_table_, name) [m.opcode](eip); \
 	}
-	
+
 /* 0x80 */
 make_group(group1_b,
-	inv, inv, inv, inv, 
-	and_i2rm_b, inv, inv, inv)
+	add_i2rm_b, inv, inv, sbb_i2rm_b, 
+	and_i2rm_b, sub_i2rm_b, inv, cmp_i2rm_b)
 
 /* 0x81 */
 make_group(group1_v,
-	inv, inv, inv, inv, 
-	and_i2rm_v, sub_i2rm_v, inv, inv)
+	add_i2rm_v, inv, inv, sbb_i2rm_v, 
+	and_i2rm_v, sub_i2rm_v, inv, cmp_i2rm_v)
 
 /* 0x83 */
 make_group(group1_sx_v,
-	inv, or_si2rm_v, inv, inv, 
+	add_si2rm_v, or_si2rm_v, inv, sbb_si2rm_v, 
 	and_si2rm_v, sub_si2rm_v, inv, cmp_si2rm_v)
 
 /* 0xc0 */
@@ -60,16 +60,16 @@ make_group(group2_cl_b,
 /* 0xd3 */
 make_group(group2_cl_v,
 	inv, inv, inv, inv, 
-	shl_rm_cl_v, inv, inv, inv)
+	shl_rm_cl_v, inv, inv, sar_rm_cl_v)
 
 /* 0xf6 */
 make_group(group3_b,
-	inv, inv, inv, inv, 
+	test_i2rm_b, inv, inv, inv, 
 	inv, inv, inv, inv)
 
 /* 0xf7 */
 make_group(group3_v,
-	inv, inv, not_rm_v, neg_rm_v, 
+	test_i2rm_v, inv, not_rm_v, neg_rm_v, 
 	mul_rm_v, imul_rm2a_v, div_rm_v, idiv_rm_v)
 
 /* 0xfe */
@@ -79,8 +79,8 @@ make_group(group4,
 
 /* 0xff */
 make_group(group5,
-	inv, dec_rm_v, inv, inv, 
-	jmp_rm_l, inv, inv, inv)
+	inv, dec_rm_v, call_rm_v, call_rm_v, 
+	jmp_rm_l, inv, push_rm_v, inv)
 
 make_group(group6,
 	inv, inv, inv, inv, 
@@ -92,7 +92,6 @@ make_group(group7,
 
 
 /* TODO: Add more instructions!!! */
-
 helper_fun opcode_table [256] = {
 /* 0x00 */	add_r2rm_b, add_r2rm_v, add_rm2r_b, add_rm2r_v,
 /* 0x04 */	add_i2a_b, add_i2a_v, inv, inv,
@@ -144,7 +143,7 @@ helper_fun opcode_table [256] = {
 /* 0xbc */	mov_i2r_v, mov_i2r_v, mov_i2r_v, mov_i2r_v, 
 /* 0xc0 */	group2_i_b, group2_i_v, ret_si_v, ret_p_v,
 /* 0xc4 */	inv, inv, mov_i2rm_b, mov_i2rm_v,
-/* 0xc8 */	inv, leave, inv, inv,
+/* 0xc8 */	inv, leave_p_v, inv, inv,
 /* 0xcc */	int3, inv, inv, inv,
 /* 0xd0 */	group2_1_b, group2_1_v, group2_cl_b, group2_cl_v,
 /* 0xd4 */	inv, inv, nemu_trap, inv,
