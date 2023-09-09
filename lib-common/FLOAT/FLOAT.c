@@ -1,8 +1,20 @@
 #include "FLOAT.h"
+#include <stdint.h>
 
+typedef union{
+	struct{
+		uint32_t m : 23;
+		uint32_t e : 8;
+		uint32_t s : 1;
+	};
+	uint32_t val;
+}Float;
+
+#define _sign(x) ((x) & 0x80000000)
+#define _scale(x) (_sign(x) ? -(x) : (x))
 FLOAT F_mul_F(FLOAT a, FLOAT b) {
-	// nemu_assert(0);
-	return (FLOAT) ((FLOAT_ARG(a)* FLOAT_ARG(b)) >> 16);
+	int64_t scale = ((int64_t)a * (int64_t)b) >> 16;
+	return scale;
 }
 
 FLOAT F_div_F(FLOAT a, FLOAT b) {
@@ -23,10 +35,10 @@ FLOAT F_div_F(FLOAT a, FLOAT b) {
 	 * It is OK not to use the template above, but you should figure
 	 * out another way to perform the division.
 	 */
-	FLOAT edx, eax;
-	asm volatile ("idiv %2" : "=a"(eax), "=d"(edx) : "r"(b), "a"(a << 16), "d"(a >> 16));
-	// nemu_assert(0);
-	return eax;
+
+	FLOAT q, r;
+	asm volatile("idiv %2" : "=a"(q), "=d"(r) : "r"(b), "a"(a << 16), "d"(a >> 16));
+	return q;
 }
 
 FLOAT f2F(float a) {
@@ -40,35 +52,22 @@ FLOAT f2F(float a) {
 	 * performing arithmetic operations on it directly?
 	 */
 
-	void *t = &a;
-	int temp = *(int *)t;
-	int sign = (temp >> 31) & 1;
-	int exp = (temp >> 23) & 0xff;
-	int frac = temp & 0x7fffff;
-	int bias = 127;
-	if(exp == 0) {
-		bias--;
+	Float f;
+	void *temp = &a;
+	f.val = *(uint32_t *)temp;
+	uint32_t m = f.m | (1 << 23);
+	int shift = 134 - (int)f.e;
+	if(shift < 0){
+	m <<= (-shift);
 	}
 	else{
-		frac += 1 << 23;
+		m >>= shift;
 	}
-	int E = exp - bias - 23;
-	E += 16;
-	if(E <= 0) 
-		frac >>= -E;
-	else	
-		frac <<= E;
-	if(sign)
-		return -frac;
-	return frac;
-
+	return (_sign(f.val) ? -m : m);
 }
 
 FLOAT Fabs(FLOAT a) {
-	// nemu_assert(0);
-	if(a >= 0) 
-		return a;
-	return -a;
+return _scale(a);
 }
 
 /* Functions below are already implemented */
@@ -96,3 +95,4 @@ FLOAT pow(FLOAT x, FLOAT y) {
 
 	return t;
 }
+

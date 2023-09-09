@@ -19,6 +19,7 @@ __attribute__((used)) static int format_FLOAT(FILE *stream, FLOAT f) {
 	int len = sprintf(buf, "0x%08x", f);
 	return __stdio_fwrite(buf, len, stream);
 }
+
 static void modify_vfprintf() {
 	/* TODO: Implement this function to hijack the formating of "%f"
 	 * argument during the execution of `_vfprintf_internal'. Below
