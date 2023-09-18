@@ -1,4 +1,5 @@
 #include "nemu.h"
+#include "memory/cache.h"
 
 #define ENTRY_START 0x100000
 
@@ -41,7 +42,7 @@ void init_monitor(int argc, char *argv[]) {
 	/* Display welcome message. */
 	welcome();
 }
-
+ 
 #ifdef USE_RAMDISK
 static void init_ramdisk() {
 	int ret;
@@ -86,8 +87,10 @@ void restart() {
 
 	/* Set the initial instruction pointer. */
 	cpu.eip = ENTRY_START;
-	    cpu.eflags.val = 0x2;
 
 	/* Initialize DRAM. */
 	init_ddr3();
+
+	/* Initialize cache */
+	init_cache();
 }
