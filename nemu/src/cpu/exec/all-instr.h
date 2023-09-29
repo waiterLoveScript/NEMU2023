@@ -4,12 +4,14 @@
 #include "data-mov/xchg.h"
 #include "data-mov/movext.h"
 #include "data-mov/cltd.h"
+#include "data-mov/lods.h"
+#include "data-mov/lgdt.h"
 #include "data-mov/push.h"
 #include "data-mov/pop.h"
 #include "data-mov/leave.h"
-#include "data-mov/lgdt.h"
 
 #include "arith/adc.h"
+#include "arith/add.h"
 #include "arith/cmp.h"
 #include "arith/dec.h"
 #include "arith/inc.h"
@@ -20,22 +22,11 @@
 #include "arith/div.h"
 #include "arith/sbb.h"
 #include "arith/sub.h"
-#include "arith/add.h"
 
-#include "control/ja.h"
 #include "control/jmp.h"
-#include "control/je.h"
-#include "control/jle.h"
-#include "control/jl.h"
-#include "control/jne.h"
-#include "control/jg.h"
-#include "control/jge.h"
-#include "control/jbe.h"
-#include "control/js.h"
-#include "control/jns.h"
 #include "control/call.h"
+#include "control/jcc.h"
 #include "control/ret.h"
-
 
 #include "logic/and.h"
 #include "logic/or.h"
@@ -47,6 +38,7 @@
 #include "logic/shrd.h"
 #include "logic/test.h"
 #include "logic/setne.h"
+#include "logic/sete.h"
 #include "logic/std.h"
 #include "logic/cld.h"
 
@@ -54,7 +46,6 @@
 #include "string/scas.h"
 #include "string/stos.h"
 #include "string/movs.h"
-#include "string/lods.h"
 
 #include "misc/misc.h"
 
