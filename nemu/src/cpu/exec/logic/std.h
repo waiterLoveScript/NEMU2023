@@ -1,5 +1,5 @@
-#ifndef __STD_H__
-#define __STD__H__
+#ifndef __std_H__
+#define __std_H__
 
 make_helper(std);
 

@@ -1,44 +1,45 @@
-#include "common.h"
-#include "memory/tlb.h"
-#include <time.h>
-#include <stdio.h>
+#include <nemu.h>
 #include <stdlib.h>
-#include "burst.h"
-
-void init_tlb() {
-  int i;
-  for (i = 0; i < TLB_SIZE; i++) {
-    tlb[i].valid_value = false;
-  }
-  return ;
+#define TLB_SIZE 64
+struct Tlb
+{
+	bool valid;
+	int tag;
+	int page_number;
+}tlb[TLB_SIZE];
+hwaddr_t TLB_read(uint32_t addr)
+{
+	int va = addr & 0xfffff000;
+	int i;
+	for (i = 0;i < TLB_SIZE; i ++)
+	{
+		if (va == tlb[i].tag && tlb[i].valid)
+		{
+			return tlb[i].page_number;
+		}
+	}
+	return -1;
+}
+void TLB_write(uint32_t addr,uint32_t num)
+{
+	int va = addr & 0xfffff000;
+	int na = num & 0xfffff000;
+	int i;
+	for (i = 0;i < TLB_SIZE; i ++)
+	{
+		if (!tlb[i].valid)
+		{
+			tlb[i].valid = true;
+			tlb[i].tag = va;
+			tlb[i].page_number = na;
+			return;
+		}
+	}
+	srand (0);
+	i = rand()%TLB_SIZE;
+	tlb[i].valid = true;
+	tlb[i].tag = va;
+	tlb[i].page_number = na;
+	return;
 }
 
-int read_tlb(uint32_t addr) {
-  int dir = addr >> 12;
-  int i;
-  for (i = 0; i < TLB_SIZE; i++) {
-    if (tlb[i].tag == dir && tlb[i].valid_value) {
-      return i;
-    }
-  }
-  return -1;
-}
-
-void write_tlb(uint32_t lnaddr, uint32_t hwaddr_t) {
-  int dir = lnaddr >> 12, page_num = hwaddr_t >> 12;
-  int i;
-  for (i = 0; i < TLB_SIZE; i++) {
-    if (!tlb[i].valid_value) {
-      tlb[i].valid_value = true;
-      tlb[i].tag = dir;
-      tlb[i].page_num = page_num;
-      return ;
-    }
-  }
-  srand(time(0));
-  i = rand() % TLB_SIZE;
-  tlb[i].valid_value = true;
-  tlb[i].tag = dir;
-  tlb[i].page_num = page_num;
-  return ;
-}
