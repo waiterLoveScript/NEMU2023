@@ -170,7 +170,6 @@ static int find_dominated_op(int s, int e, bool *success) {
 	return dominated_op;
 }
 
-uint32_t get_reg_val(const char*, bool *);
 
 static uint32_t eval(int s, int e, bool *success) {
 	if(s > e) {
@@ -182,10 +181,28 @@ static uint32_t eval(int s, int e, bool *success) {
 		// single token
 		uint32_t val;
 		switch(tokens[s].type) {
-			case REG: val = get_reg_val(tokens[s].str + 1, success);	// +1 to skip '$'
-					  if(!*success) { return 0; }
-					  break;
-
+			case REG: {
+				if (!strcmp(tokens[s].str, "$eax")){
+return cpu.eax;
+ } else if (!strcmp(tokens[s].str, "$ecx")){
+return cpu.ecx;
+} else if (!strcmp(tokens[s].str, "$edx")){
+return cpu.edx;
+} else if (!strcmp(tokens[s].str, "$ebx")){
+return cpu.ebx;
+} else if (!strcmp(tokens[s].str, "$esp")){
+return cpu.esp; } else if (!strcmp(tokens[s].str, "$ebp")){
+ return cpu.ebp;
+} else if (!strcmp(tokens[s].str, "$esi")){
+ return cpu.esi;
+} else if (!strcmp(tokens[s].str, "$edi")){
+ return cpu.edi;
+} else if (!strcmp(tokens[s].str, "$eip")){
+return cpu.eip;
+ } else {
+ return 0;
+                 }
+           } 
 			case NUM: val = strtol(tokens[s].str, NULL, 0); break;
 
 			default: assert(0);
@@ -276,4 +293,3 @@ uint32_t expr(char *e, bool *success) {
 
 	return eval(0, nr_token - 1, success);
 }
-

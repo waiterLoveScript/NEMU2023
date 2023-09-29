@@ -3,6 +3,7 @@
 .PHONY: nemu entry testcase kernel run gdb test submit clean
 
 CC := gcc
+CC4 := /usr/bin/gcc-4.4
 LD := ld
 CFLAGS := -MMD -Wall -Werror -c
 
@@ -53,9 +54,8 @@ clean: clean-cpp
 
 ##### some convinient rules #####
 
-USERPROG := obj/testcase/mov
-ENTRY := $(USERPROG)
-#ENTRY := $(kernel_BIN)
+USERPROG := obj/testcase/add
+ENTRY := $(kernel_BIN)
 
 entry: $(ENTRY)
 	objcopy -S -O binary $(ENTRY) entry

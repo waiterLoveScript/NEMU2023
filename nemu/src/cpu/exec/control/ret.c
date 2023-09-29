@@ -1,19 +1,15 @@
 #include "cpu/exec/helper.h"
+#define DATA_BYTE 1
+#include "ret-template.h"
+#undef DATA_BYTE
 
-make_helper(ret){
-	cpu.eip = swaddr_read(cpu.esp, 4) - 1;
-	cpu.esp = cpu.esp + 4;
-	print_asm("ret");
-	return 1;
-}
+#define DATA_BYTE 2
+#include "ret-template.h"
+#undef DATA_BYTE
 
-make_helper(ret_i_w){
-	uint16_t temp = instr_fetch(eip + 1, 2);
-	cpu.eip = swaddr_read(cpu.esp, 4) - 3;
-	cpu.esp += 4 + temp;
+#define DATA_BYTE 4
+#include "ret-template.h"
+#undef DATA_BYTE
 
-	print_asm("ret $0x%x", temp);
-
-	return 3;
-
-}
+make_helper_v(ret_n)
+make_helper_v(ret_i)

@@ -130,8 +130,6 @@ void write_cache_L2(hwaddr_t addr, size_t len, uint32_t data) {
       return;
     }
   }
-  //  Hit loss!
-  // write allocate
   wayIndex = read_cache_L2(addr);
   cache_L2[wayIndex].dirtyVal = true;
   memcpy(cache_L2[wayIndex].data + block_bias, &data, len);

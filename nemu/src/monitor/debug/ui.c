@@ -45,10 +45,14 @@ static int cmd_info(char *args) {
 	char *arg = strtok(NULL, " ");
 
 	if(arg != NULL) {
-		if(strcmp(arg, "r") == 0) {
-			display_reg();
+		if( strcmp(arg, "r") == 0) {
+			 int i=0;
+		   while(i<=7)
+			{printf("%s\t0x%08x\t%d\n",regsl[i],cpu.gpr[i]._32,cpu.gpr[i]._32);
+			i++;}
+			printf("eip\t0x%08x\t%d\n", cpu.eip, cpu.eip);
 		}
-		else if(strcmp(arg, "w") == 0) {
+	     if( strcmp(arg, "w") == 0) {
 			list_watchpoint();
 		}
 	}
@@ -69,15 +73,8 @@ static int cmd_x(char *args) {
 		addr = expr(arg + strlen(arg) + 1, &success);
 		if(success) { 
 			for(i = 0; i < n; i ++) {
-				if(i % 4 == 0) {
-					printf("0x%08x: ", addr);
-				}
-
 				printf("0x%08x ", swaddr_read(addr, 4));
 				addr += 4;
-				if(i % 4 == 3) {
-					printf("\n");
-				}
 			}
 			printf("\n");
 		}
@@ -93,7 +90,7 @@ static int cmd_p(char *args) {
 
 	if(args) {
 		uint32_t r = expr(args, &success);
-		if(success) { printf("0x%08x(%d)\n", r, r); }
+		if(success) { printf("0x%08x\n", r); }
 		else { printf("Bad expression\n"); }
 	}
 	return 0;
