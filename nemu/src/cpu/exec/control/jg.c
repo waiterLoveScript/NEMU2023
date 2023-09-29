@@ -13,4 +13,3 @@
 #undef DATA_BYTE
 
 make_helper_v(jg_i)
-

@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <elf.h>
 
 void cpu_exec(uint32_t);
-void display_reg();
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 char* rl_gets() {
@@ -28,95 +28,6 @@ char* rl_gets() {
 	return line_read;
 }
 
-/* TODO: Add single step */
-static int cmd_si(char *args) {
-	char *arg = strtok(NULL, " ");
-	int i = 1;
-
-	if(arg != NULL) {
-		sscanf(arg, "%d", &i);
-	}
-	cpu_exec(i);
-	return 0;
-}
-
-/* TODO: Add info command */
-static int cmd_info(char *args) {
-	char *arg = strtok(NULL, " ");
-
-	if(arg != NULL) {
-		if( strcmp(arg, "r") == 0) {
-			 int i=0;
-		   while(i<=7)
-			{printf("%s\t0x%08x\t%d\n",regsl[i],cpu.gpr[i]._32,cpu.gpr[i]._32);
-			i++;}
-			printf("eip\t0x%08x\t%d\n", cpu.eip, cpu.eip);
-		}
-	     if( strcmp(arg, "w") == 0) {
-			list_watchpoint();
-		}
-	}
-	return 0;
-}
-
-/* Add examine memory */
-static int cmd_x(char *args) {
-	char *arg = strtok(NULL, " ");
-	int n;
-	swaddr_t addr;
-	int i;
-
-	if(arg != NULL) {
-		sscanf(arg, "%d", &n);
-
-		bool success;
-		addr = expr(arg + strlen(arg) + 1, &success);
-		if(success) { 
-			for(i = 0; i < n; i ++) {
-				printf("0x%08x ", swaddr_read(addr, 4));
-				addr += 4;
-			}
-			printf("\n");
-		}
-		else { printf("Bad expression\n"); }
-
-	}
-	return 0;
-}
-
-/* Add expression evaluation  */
-static int cmd_p(char *args) {
-	bool success;
-
-	if(args) {
-		uint32_t r = expr(args, &success);
-		if(success) { printf("0x%08x\n", r); }
-		else { printf("Bad expression\n"); }
-	}
-	return 0;
-}
-
-/* Add set watchpoint  */
-static int cmd_w(char *args) {
-	if(args) {
-		int NO = set_watchpoint(args);
-		if(NO != -1) { printf("Set watchpoint #%d\n", NO); }
-		else { printf("Bad expression\n"); }
-	}
-	return 0;
-}
-
-/* Add delete watchpoint */
-static int cmd_d(char *args) {
-	int NO;
-	sscanf(args, "%d", &NO);
-	if(!delete_watchpoint(NO)) {
-		printf("Watchpoint #%d does not exist\n", NO);
-	}
-
-	return 0;
-}
-
 static int cmd_c(char *args) {
 	cpu_exec(-1);
 	return 0;
@@ -128,6 +39,137 @@ static int cmd_q(char *args) {
 
 static int cmd_help(char *args);
 
+static int cmd_si(char *args) {
+	
+	if (!args) 
+	{
+		cpu_exec(1);
+		return 0;
+	}
+	else
+	{
+	cpu_exec(atoi(args));
+	return 0;
+	}
+}
+
+
+static int cmd_info(char *args){
+	if (args[0]=='r')
+	{
+	printf("eax 0x%08x %8d\n",cpu.eax,cpu.eax);
+	printf("ecx 0x%08x %8d\n",cpu.ecx,cpu.ecx);
+	printf("edx 0x%08x %8d\n",cpu.edx,cpu.edx);
+	printf("ebx 0x%08x %8d\n",cpu.ebx,cpu.ebx);
+	printf("esp 0x%08x %8d\n",cpu.esp,cpu.esp);
+	printf("ebp 0x%08x %8d\n",cpu.ebp,cpu.ebp);
+	printf("esi 0x%08x %8d\n",cpu.esi,cpu.esi);
+	printf("edi 0x%08x %8d\n",cpu.edi,cpu.edi);
+	/*for(int i=0;i<8;i++)
+	printf("%s 0x%x %d\n",regsl[i],gpr[i]._32,gpr[i]._32);*/	
+	}
+	if (args[0]=='w')
+	{
+		info_wp();
+	}
+	return 0;
+}
+
+static int cmd_x(char *args){
+	char *N=strtok(NULL, " ");
+	char *EXPR = strtok(NULL, " ");
+	int address;
+	int len;
+	sscanf(EXPR,"%x",&address);
+	sscanf(N,"%d", &len);
+	int x=len/4;
+	int i;
+	for(i=0;i<x;i++)
+	{
+		printf("0x%08x: ",address);
+		int z=4;
+		while(z--)
+		{
+			printf("0x%08x ",swaddr_read(address,4));
+			address+=4;
+		}
+		printf("\n");
+	}
+	printf("0x%08x: ",address);
+	int y=len%4;
+	while(y--)
+	{
+		printf("0x%08x ",swaddr_read(address,4));
+		address+=4;
+	}
+	printf("\n");
+	return 0;
+}
+
+static int cmd_w(char *args){
+		WP *f;
+		bool success;
+		f=new_wp();
+		printf("watchpoint %d: %s\n",f->NO,args);
+		f->value=expr(args,&success);
+		strcpy(f->str,args);
+		if(!success)Assert(0,"make_token false");
+		printf("value : %d\n",f->value);
+		return 0;
+	}
+static int cmd_d(char *args){
+	int i;
+	sscanf(args,"%d",&i);
+	delete_wp(i);
+	return 0;
+}
+static int cmd_p(char *args){
+	uint32_t num;
+	bool success;
+	num=expr(args,&success);
+	if(success)printf("0x%x\t%d\n",num,num);
+	else Assert(0,"Wrong");
+	return 0;
+}
+void GetFunctionAddr(swaddr_t cur_addr,char* name);
+typedef struct {
+	swaddr_t prev_ebp;
+	swaddr_t ret_addr;
+	uint32_t args[4];
+}PartOfStackFrame;
+
+static int cmd_bt(char* args){
+	PartOfStackFrame EBP;
+	char name[32];
+	EBP.ret_addr = cpu.eip;
+	swaddr_t addr = cpu.ebp;
+	//printf("%x\n",addr);
+	int i = 0;
+	while(addr){
+		printf("#%d\t",i ++);
+		GetFunctionAddr(EBP.ret_addr,name);
+		printf("%s\t",name);
+		EBP.prev_ebp = swaddr_read(addr,4);
+		EBP.ret_addr = swaddr_read(addr + 4, 4);
+		int j;
+		for(j = 0;j < 4 ;j ++){
+			EBP.args[j] = swaddr_read(addr + 8 + 4 * j, 4);
+		}
+		printf("0x%x\t",EBP.ret_addr);
+		for(j = 0; j < 4; j ++){
+			printf("0x%x",EBP.args[j]);
+			if(j < 3) printf(",");
+			else printf("\n");
+		}
+		addr = EBP.prev_ebp;
+
+	}
+	
+	return 0;
+}
+
+
+
 static struct {
 	char *name;
 	char *description;
@@ -135,15 +177,15 @@ static struct {
 } cmd_table [] = {
 	{ "help", "Display informations about all supported commands", cmd_help },
 	{ "c", "Continue the execution of the program", cmd_c },
-	{ "q", "Exit NEMU", cmd_q }, 
-
+	{ "q", "Exit NEMU", cmd_q },
+	{ "si", "Execute N times according to the parameter N", cmd_si},
+	{ "info", "Parameter r prints register status, parameter w prints monitoring point information", cmd_info},
+	{ "x","Use the given address as the starting memory address to output N consecutive 4 bytes", cmd_x},
+	{ "p","Find the value of the expression EXPR", cmd_p},
+	{ "w","Pause the program when the value of the expression expr changes", cmd_w},
+	{ "d","Delete the designated serial number monitoring point", cmd_d},
+	{ "bt","Print stack frame chain",cmd_bt},
 	/* TODO: Add more commands */
-        { "si", "Single step", cmd_si },
-        { "info", "info r - print register values; info w - show watch point state", cmd_info },
-	{ "x", "Examine memory", cmd_x },
-        { "p", "Evaluate the value of expression", cmd_p },
-	{ "w", "Set watchpoint", cmd_w },
-	{ "d", "Delete watchpoint", cmd_d }
 
 };
 

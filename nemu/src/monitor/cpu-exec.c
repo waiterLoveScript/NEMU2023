@@ -1,6 +1,7 @@
 #include "monitor/monitor.h"
-#include "monitor/watchpoint.h"
 #include "cpu/helper.h"
+#include "monitor/watchpoint.h"
+#include "cpu/reg.h"
 #include <setjmp.h>
 
 /* The assembly code of instructions executed is only output to the screen
@@ -72,25 +73,15 @@ void cpu_exec(volatile uint32_t n) {
 			printf("%s\n", asm_buf);
 		}
 #endif
-
+		
 		/* TODO: check watchpoints here. */
-                WP *wp = scan_watchpoint();
-		if(wp != NULL) {
-			puts(asm_buf);
-			printf("\n\nHint watchpoint %d at address 0x%08x, expr = %s\n", wp->NO, cpu.eip - instr_len, wp->expr);
-			printf("old value = %#08x\nnew value = %#08x\n", wp->old_val, wp->new_val);
-			wp->old_val = wp->new_val;
-			return;
-		}
-
-		if(nemu_state != RUNNING) { return; }
-
+		if(!check_wp())nemu_state = STOP;
 
 #ifdef HAS_DEVICE
 		extern void device_update();
 		device_update();
 #endif
-
+		
 		if(nemu_state != RUNNING) { return; }
 	}
 
